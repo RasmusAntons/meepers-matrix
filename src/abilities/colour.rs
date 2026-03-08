@@ -1,12 +1,15 @@
-use std::io::Cursor;
-use futures::FutureExt;
-use clap::{arg, ArgMatches, Command};
-use image::{Rgba, RgbaImage, ImageFormat};
-use matrix_sdk::attachment::AttachmentConfig;
-use matrix_sdk::Room;
-use matrix_sdk::ruma::events::room::message::TextMessageEventContent;
-use css_color::Srgb;
 use crate::abilities::Ability;
+use clap::{arg, ArgMatches, Command};
+use css_color::Srgb;
+use futures::FutureExt;
+use image::{ImageFormat, Rgba, RgbaImage};
+use matrix_sdk::{
+    attachment::AttachmentConfig,
+    room::reply::{EnforceThread, Reply},
+    ruma::events::room::message::{OriginalSyncRoomMessageEvent, TextMessageEventContent},
+    Room
+};
+use std::io::Cursor;
 
 fn generate_image(width: u32, height: u32, rgb: Rgba<u8>) -> Vec<u8> {
     let mut png_buffer = Cursor::new(Vec::new());
@@ -19,7 +22,7 @@ pub static COLOUR_ABILITY: Ability = Ability {
     aliases: &["color"],
     description: "Send an image of some colour.",
     command: || Some(Command::new("colour").arg(arg!(<colour> "The colour in css notation").num_args(1..).trailing_var_arg(true))),
-    execute: |args: &ArgMatches, room: &Room| {
+    execute: |args: &ArgMatches, ev: &OriginalSyncRoomMessageEvent, room: &Room| {
         async move {
             let colour_arg = args.get_many::<String>("colour").unwrap().cloned().collect::<Vec<_>>().join(" ");
             let colour: Srgb = match colour_arg.parse() {
@@ -38,7 +41,7 @@ pub static COLOUR_ABILITY: Ability = Ability {
                 format!("{}.png", colour_name),
                 &mime::IMAGE_PNG,
                 png_data,
-                AttachmentConfig::new().caption(Some(TextMessageEventContent::plain(colour_name)))
+                AttachmentConfig::new().caption(Some(TextMessageEventContent::plain(colour_name))).reply(Some(Reply{event_id: ev.event_id.clone(), enforce_thread: EnforceThread::MaybeThreaded}))
             ).await.expect("failed to send response");
             Ok(())
         }.boxed()

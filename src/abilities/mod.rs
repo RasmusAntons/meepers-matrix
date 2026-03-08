@@ -1,12 +1,10 @@
-use std::collections::HashMap;
 use clap::{ArgMatches, Command};
 use futures::future::BoxFuture;
 use lazy_static::lazy_static;
-use matrix_sdk::{Room, ruma::{
-    events::room::message::{
-        OriginalSyncRoomMessageEvent, RoomMessageEventContent, AddMentions, ForwardThread
-    },
-}};
+use matrix_sdk::{ruma::events::room::message::{
+    AddMentions, ForwardThread, OriginalSyncRoomMessageEvent, RoomMessageEventContent
+}, Room};
+use std::collections::HashMap;
 
 pub mod colour;
 pub mod define;
@@ -16,7 +14,7 @@ pub struct Ability<'a> {
     aliases: &'a [&'a str],
     description: &'a str,
     command: fn() -> Option<Command>,
-    execute: for <'b> fn(&'b ArgMatches, &'b Room) -> BoxFuture<'b, Result<(), String>>,
+    execute: for <'b> fn(&'b ArgMatches, &'b OriginalSyncRoomMessageEvent, &'b Room) -> BoxFuture<'b, Result<(), String>>,
 }
 
 impl Ability<'_> {
@@ -66,7 +64,7 @@ pub async fn on_message(ev: OriginalSyncRoomMessageEvent, room: Room) {
         let unparsed_args: Vec<String> = ev.content.body().split_ascii_whitespace().map(String::from).collect();
         match ability.parse_args(unparsed_args) {
             Ok(args) => {
-                if let Err(err) = (ability.execute)(&args, &room).await {
+                if let Err(err) = (ability.execute)(&args, &ev, &room).await {
                     let message = RoomMessageEventContent::text_plain(err).make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
                     room.send(message).await.unwrap();
                 }
