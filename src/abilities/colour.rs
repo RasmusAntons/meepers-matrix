@@ -3,6 +3,8 @@ use clap::{arg, ArgMatches, Command};
 use css_color::Srgb;
 use futures::FutureExt;
 use image::{ImageFormat, Rgba, RgbaImage};
+use matrix_sdk::attachment::{AttachmentInfo, BaseImageInfo};
+use matrix_sdk::ruma::UInt;
 use matrix_sdk::{
     attachment::AttachmentConfig,
     room::reply::{EnforceThread, Reply},
@@ -32,7 +34,7 @@ pub static COLOUR_ABILITY: Ability = Ability {
                 }
             };
             let rgba_value = Rgba([(colour.red * 255.0) as u8, (colour.green * 255.0) as u8, (colour.blue * 255.0) as u8, (colour.alpha * 255.0) as u8]);
-            let png_data = generate_image(128, 128, rgba_value);
+            let png_data = generate_image(128, 16, rgba_value);
             let colour_name = match rgba_value[3] {
                 255 => format!("#{:02X}{:02X}{:02X}", rgba_value[0], rgba_value[1], rgba_value[2]),
                 _ => format!("#{:02X}{:02X}{:02X}{:02X}", rgba_value[0], rgba_value[1], rgba_value[2], rgba_value[3]),
@@ -41,7 +43,16 @@ pub static COLOUR_ABILITY: Ability = Ability {
                 format!("{}.png", colour_name),
                 &mime::IMAGE_PNG,
                 png_data,
-                AttachmentConfig::new().caption(Some(TextMessageEventContent::plain(colour_name))).reply(Some(Reply{event_id: ev.event_id.clone(), enforce_thread: EnforceThread::MaybeThreaded}))
+                AttachmentConfig::new()
+                    .caption(Some(TextMessageEventContent::plain(colour_name)))
+                    .reply(Some(Reply{event_id: ev.event_id.clone(), enforce_thread: EnforceThread::MaybeThreaded}))
+                    .info(AttachmentInfo::Image(BaseImageInfo{
+                        height: Some(UInt::from(128u32)),
+                        width: Some(UInt::from(128u32)),
+                        size: None,
+                        blurhash: None,
+                        is_animated: None,
+                    }))
             ).await.expect("failed to send response");
             Ok(())
         }.boxed()
