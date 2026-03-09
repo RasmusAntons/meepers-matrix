@@ -13,3 +13,7 @@ Example usage:
 ```bash
 BOT_USER_ID="@meepers:enigmatics.org" BOT_PASSWORD="<password>" cargo run
 ```
+
+## Dev
+
+Before committing changes, run `cargo fmt`.

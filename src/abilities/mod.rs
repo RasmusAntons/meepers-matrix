@@ -1,9 +1,10 @@
 use clap::{ArgMatches, Command};
 use futures::future::BoxFuture;
 use lazy_static::lazy_static;
-use matrix_sdk::{ruma::events::room::message::{
-    AddMentions, ForwardThread, OriginalSyncRoomMessageEvent, RoomMessageEventContent
-}, Room};
+use matrix_sdk::{
+    Room,
+    ruma::events::room::message::{AddMentions, ForwardThread, OriginalSyncRoomMessageEvent, RoomMessageEventContent},
+};
 use std::collections::HashMap;
 
 pub mod colour;
@@ -14,27 +15,23 @@ pub struct Ability<'a> {
     aliases: &'a [&'a str],
     description: &'a str,
     command: fn() -> Option<Command>,
-    execute: for <'b> fn(&'b ArgMatches, &'b OriginalSyncRoomMessageEvent, &'b Room) -> BoxFuture<'b, Result<(), String>>,
+    execute:
+        for<'b> fn(&'b ArgMatches, &'b OriginalSyncRoomMessageEvent, &'b Room) -> BoxFuture<'b, Result<(), String>>,
 }
 
 impl Ability<'_> {
     fn parse_args(&self, args: Vec<String>) -> Result<ArgMatches, String> {
         match (self.command)() {
             None => Err("oof".to_string()),
-            Some(command) => {
-                match command.try_get_matches_from(args) {
-                    Ok(matches) => Ok(matches),
-                    Err(err) => Err(err.to_string())
-                }
+            Some(command) => match command.try_get_matches_from(args) {
+                Ok(matches) => Ok(matches),
+                Err(err) => Err(err.to_string()),
             },
         }
     }
 }
 
-static ABILITIES: &[&Ability] = &[
-    &colour::COLOUR_ABILITY,
-    &define::DEFINE_ABILITY,
-];
+static ABILITIES: &[&Ability] = &[&colour::COLOUR_ABILITY, &define::DEFINE_ABILITY];
 
 lazy_static! {
     static ref ABILITY_MAP: HashMap<&'static str, &'static Ability<'static>> = {
@@ -56,7 +53,8 @@ pub async fn on_message(ev: OriginalSyncRoomMessageEvent, room: Room) {
         let ability = match ABILITY_MAP.get(unparsed_args[0].as_str()) {
             Some(ability) => *ability,
             None => {
-                let message = RoomMessageEventContent::text_markdown("invalid command, use `!help` to list commands").make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
+                let message = RoomMessageEventContent::text_markdown("invalid command, use `!help` to list commands")
+                    .make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
                 room.send(message).await.unwrap();
                 return;
             }
@@ -65,12 +63,17 @@ pub async fn on_message(ev: OriginalSyncRoomMessageEvent, room: Room) {
         match ability.parse_args(unparsed_args) {
             Ok(args) => {
                 if let Err(err) = (ability.execute)(&args, &ev, &room).await {
-                    let message = RoomMessageEventContent::text_plain(err).make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
+                    let message = RoomMessageEventContent::text_plain(err).make_reply_to(
+                        &ev,
+                        ForwardThread::Yes,
+                        AddMentions::Yes,
+                    );
                     room.send(message).await.unwrap();
                 }
-            },
+            }
             Err(err) => {
-                let message = RoomMessageEventContent::text_plain(err).make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
+                let message =
+                    RoomMessageEventContent::text_plain(err).make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
                 room.send(message).await.unwrap();
             }
         }

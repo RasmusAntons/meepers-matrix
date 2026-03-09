@@ -1,8 +1,8 @@
 use crate::abilities::Ability;
-use clap::{arg, ArgMatches, Command};
+use clap::{ArgMatches, Command, arg};
 use futures::FutureExt;
-use matrix_sdk::ruma::events::room::message::{OriginalSyncRoomMessageEvent, RoomMessageEventContent};
 use matrix_sdk::Room;
+use matrix_sdk::ruma::events::room::message::{OriginalSyncRoomMessageEvent, RoomMessageEventContent};
 
 pub static DEFINE_ABILITY: Ability = Ability {
     name: "define",
@@ -14,6 +14,7 @@ pub static DEFINE_ABILITY: Ability = Ability {
             let message = RoomMessageEventContent::text_plain("definition...");
             room.send(message).await.expect("failed to send message");
             Ok(())
-        }.boxed()
-    }
+        }
+        .boxed()
+    },
 };
