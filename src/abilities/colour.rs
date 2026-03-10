@@ -1,4 +1,5 @@
 use crate::abilities::Ability;
+use anyhow::Error;
 use clap::{ArgMatches, Command, arg};
 use css_color::Srgb;
 use futures::FutureExt;
@@ -45,7 +46,7 @@ pub static COLOUR_ABILITY: Ability = Ability {
             let colour: Srgb = match colour_arg.parse() {
                 Ok(colour) => colour,
                 Err(_) => {
-                    return Err("not a valid css colour".to_string());
+                    return Err(Error::msg("not a valid css colour"));
                 }
             };
             let rgba = Rgba([
@@ -54,7 +55,7 @@ pub static COLOUR_ABILITY: Ability = Ability {
                 (colour.blue * 255.0) as u8,
                 (colour.alpha * 255.0) as u8,
             ]);
-            let png = generate_image(128, 16, rgba);
+            let png = generate_image(128, 128, rgba);
             let colour_hex = match rgba[3] {
                 255 => format!("#{:02X}{:02X}{:02X}", rgba[0], rgba[1], rgba[2]),
                 _ => format!("#{:02X}{:02X}{:02X}{:02X}", rgba[0], rgba[1], rgba[2], rgba[3]),

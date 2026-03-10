@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::{ArgMatches, Command};
 use futures::future::BoxFuture;
 use lazy_static::lazy_static;
@@ -8,6 +9,7 @@ use matrix_sdk::{
 use std::collections::HashMap;
 
 pub mod colour;
+pub mod config;
 pub mod define;
 
 pub struct Ability<'a> {
@@ -15,8 +17,7 @@ pub struct Ability<'a> {
     aliases: &'a [&'a str],
     description: &'a str,
     command: fn() -> Option<Command>,
-    execute:
-        for<'b> fn(&'b ArgMatches, &'b OriginalSyncRoomMessageEvent, &'b Room) -> BoxFuture<'b, Result<(), String>>,
+    execute: for<'b> fn(&'b ArgMatches, &'b OriginalSyncRoomMessageEvent, &'b Room) -> BoxFuture<'b, Result<()>>,
 }
 
 impl Ability<'_> {
@@ -31,7 +32,11 @@ impl Ability<'_> {
     }
 }
 
-static ABILITIES: &[&Ability] = &[&colour::COLOUR_ABILITY, &define::DEFINE_ABILITY];
+static ABILITIES: &[&Ability] = &[
+    &colour::COLOUR_ABILITY,
+    &config::CONFIG_ABILITY,
+    &define::DEFINE_ABILITY,
+];
 
 lazy_static! {
     static ref ABILITY_MAP: HashMap<&'static str, &'static Ability<'static>> = {
@@ -63,7 +68,7 @@ pub async fn on_message(ev: OriginalSyncRoomMessageEvent, room: Room) {
         match ability.parse_args(unparsed_args) {
             Ok(args) => {
                 if let Err(err) = (ability.execute)(&args, &ev, &room).await {
-                    let message = RoomMessageEventContent::text_plain(err).make_reply_to(
+                    let message = RoomMessageEventContent::text_plain(err.to_string()).make_reply_to(
                         &ev,
                         ForwardThread::Yes,
                         AddMentions::Yes,

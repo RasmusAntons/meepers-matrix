@@ -1,14 +1,20 @@
+use crate::config::GenericConfigKey;
+use crate::db::Db;
 use matrix_sdk::ruma::UserId;
 use matrix_sdk::{Client, config::SyncSettings};
 use std::env;
 
 mod abilities;
+mod config;
+mod db;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let meepers = UserId::parse(env::var("BOT_USER_ID").unwrap_or("@meepers:enigmatics.org".to_string()))
         .expect("invalid BOT_USER_ID");
     let client = Client::builder().server_name(meepers.server_name()).build().await?;
+    let db = Db::connect_and_migrate()?;
+    db.close()?;
     client
         .matrix_auth()
         .login_username(

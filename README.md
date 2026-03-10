@@ -7,11 +7,11 @@ I am also using this as an opportunity to learn Rust, so don't necessarily expec
 
 ## Setup
 
-The only parameters are the environment variables `BOT_USER_ID` and `BOT_PASSWORD`. 
+The only parameters are the environment variables `BOT_USER_ID`,  `BOT_PASSWORD` and `DB_DIR`.
 
 Example usage:
 ```bash
-BOT_USER_ID="@meepers:enigmatics.org" BOT_PASSWORD="<password>" cargo run
+BOT_USER_ID="@meepers:enigmatics.org" BOT_PASSWORD="<password>" DB_DIR="data" cargo run
 ```
 
 ## Dev
