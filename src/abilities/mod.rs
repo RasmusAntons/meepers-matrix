@@ -59,7 +59,7 @@ pub async fn on_message(ev: OriginalSyncRoomMessageEvent, room: Room) {
             Some(ability) => *ability,
             None => {
                 let message = RoomMessageEventContent::text_markdown("invalid command, use `!help` to list commands")
-                    .make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
+                    .make_reply_to(&ev, ForwardThread::Yes, AddMentions::No);
                 room.send(message).await.unwrap();
                 return;
             }
@@ -71,14 +71,14 @@ pub async fn on_message(ev: OriginalSyncRoomMessageEvent, room: Room) {
                     let message = RoomMessageEventContent::text_plain(err.to_string()).make_reply_to(
                         &ev,
                         ForwardThread::Yes,
-                        AddMentions::Yes,
+                        AddMentions::No,
                     );
                     room.send(message).await.unwrap();
                 }
             }
             Err(err) => {
                 let message =
-                    RoomMessageEventContent::text_plain(err).make_reply_to(&ev, ForwardThread::Yes, AddMentions::Yes);
+                    RoomMessageEventContent::text_plain(err).make_reply_to(&ev, ForwardThread::Yes, AddMentions::No);
                 room.send(message).await.unwrap();
             }
         }

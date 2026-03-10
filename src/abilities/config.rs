@@ -38,7 +38,7 @@ pub static CONFIG_ABILITY: Ability = Ability {
                         .ok_or(Error::msg("failed to get requested key from args"))?;
                     let value = config::get_json_by_name(key_name.as_str())?;
                     let message = RoomMessageEventContent::text_plain(format!("{} = {}", key_name, value))
-                        .make_reply_to(ev, ForwardThread::Yes, AddMentions::Yes);
+                        .make_reply_to(ev, ForwardThread::Yes, AddMentions::No);
                     room.send(message).await.expect("failed to send message");
                 }
                 Some(("set", sub_args)) => {
@@ -55,7 +55,7 @@ pub static CONFIG_ABILITY: Ability = Ability {
                     config::set_json_by_name(key_name, &json_value)?;
                     let message =
                         RoomMessageEventContent::text_plain(format!("{} = {}", key_name, json_value.to_string()))
-                            .make_reply_to(ev, ForwardThread::Yes, AddMentions::Yes);
+                            .make_reply_to(ev, ForwardThread::Yes, AddMentions::No);
                     room.send(message).await.expect("failed to send message");
                 }
                 _ => {}
