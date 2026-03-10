@@ -2,7 +2,6 @@ use anyhow::{Error, Result};
 use include_dir::{Dir, include_dir};
 use lazy_static::lazy_static;
 use rusqlite::Connection;
-use rusqlite::Error::QueryReturnedNoRows;
 use rusqlite_migration::Migrations;
 use std::path::Path;
 use std::sync::LazyLock;
@@ -31,7 +30,7 @@ impl Db {
 
     pub fn connect() -> Result<Self> {
         let db_path = Path::new(DB_PATH_STR.as_str());
-        let mut conn = Connection::open(db_path.join("db.sqlite"))?;
+        let conn = Connection::open(db_path.join("db.sqlite"))?;
         Ok(Self { conn })
     }
 
@@ -40,21 +39,5 @@ impl Db {
             Ok(_) => Ok(()),
             Err(_) => Err(Error::msg("failed to close database")),
         }
-    }
-
-    pub fn get_config<T>(self, key: &String) -> std::result::Result<T, Error>
-    where
-        String: Into<T>,
-    {
-        let value = match self
-            .conn
-            .query_one("SELECT value FROM config WHERE key = :key", &[(":key", &key)], |r| {
-                r.get::<_, String>(0)
-            }) {
-            Ok(value) => value,
-            Err(QueryReturnedNoRows) => return Err(Error::msg("config key does not exist")),
-            Err(e) => return Err(Error::from(e)),
-        };
-        Ok(value.into())
     }
 }

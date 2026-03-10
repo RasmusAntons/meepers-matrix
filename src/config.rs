@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use rusqlite::Error::QueryReturnedNoRows;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
