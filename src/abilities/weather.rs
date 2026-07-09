@@ -9,19 +9,22 @@ use matrix_sdk::Room;
 use matrix_sdk::ruma::events::room::message::{AddMentions, ForwardThread, OriginalSyncRoomMessageEvent, RoomMessageEventContent};
 use reqwest::{StatusCode, Url};
 use nest_struct::nest_struct;
+use rusqlite::fallible_iterator::FallibleIterator;
 use serde::{Deserialize, Serialize};
 use uom::si::f64::ThermodynamicTemperature;
 use uom::si::thermodynamic_temperature;
 use crate::config;
 use crate::config::OWM_API_KEY;
 
-static OWM_GEOCODING_API: &str = "https://api.openweathermap.org/geo/1.0/direct";
+static OWM_GEOCODING_ZIP_API: &str = "https://api.openweathermap.org/geo/1.0/zip";
+static OWM_GEOCODING_DIRECT_API: &str = "https://api.openweathermap.org/geo/1.0/direct";
 static OWM_CURRENT_WEATHER_API: &str = "https://api.openweathermap.org/data/2.5/weather";
 
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Location {
     name: String,
+    zip: Option<String>,
     local_names: Option<HashMap<String, String>>,
     lat: f64,
     lon: f64,
@@ -29,19 +32,32 @@ struct Location {
     state: Option<String>,
 }
 
-async fn resolve_location(name: String, api_key: String) -> Result<Vec<Location>> {
-    let url = Url::parse_with_params(
-        OWM_GEOCODING_API,
-        &[
-            ("q", name.as_str()),
-            ("appid", api_key.as_str()),
-        ]
-    )?;
+async fn resolve_location(name: String, zip: bool, api_key: String) -> Result<Vec<Location>> {
+    let url = match zip {
+        true => Url::parse_with_params(
+            OWM_GEOCODING_ZIP_API,
+            &[
+                ("zip", name.as_str()),
+                ("appid", api_key.as_str()),
+            ]
+        )?,
+        false => Url::parse_with_params(
+            OWM_GEOCODING_DIRECT_API,
+            &[
+                ("q", name.as_str()),
+                ("appid", api_key.as_str()),
+            ]
+        )?
+    };
     let resp = reqwest::get(url).await?;
     match resp.status() {
         StatusCode::OK => {
             let text = resp.text().await?;
-            Ok(serde_json::from_str::<Vec<Location>>(text.as_str())?)
+            if zip {
+                Ok(vec![serde_json::from_str::<Location>(text.as_str())?])
+            } else {
+                Ok(serde_json::from_str::<Vec<Location>>(text.as_str())?)
+            }
         },
         _ => Err(Error::msg("failed to resolve location")),
     }
@@ -125,10 +141,14 @@ async fn get_current_weather(location: &Location, api_key: String) -> Result<Cur
 pub static WEATHER_ABILITY: Ability = Ability {
     name: "weather",
     aliases: &[],
-    description: "get the current weather at a location",
+    description: "Get the current weather at a location",
     command: || {
         Some(
             Command::new("weather").arg(
+                arg!(--zip)
+                    .num_args(0)
+                    .required(false)
+            ).arg(
                 arg!(<location>)
                     .num_args(1..)
                     .trailing_var_arg(true),
@@ -137,6 +157,7 @@ pub static WEATHER_ABILITY: Ability = Ability {
     },
     execute: |args: &ArgMatches, ev: &OriginalSyncRoomMessageEvent, room: &Room| {
         async move {
+            let zip_arg = args.get_flag("zip");
             let location_arg = args
                 .get_many::<String>("location")
                 .unwrap()
@@ -144,7 +165,7 @@ pub static WEATHER_ABILITY: Ability = Ability {
                 .collect::<Vec<_>>()
                 .join(" ");
             let owm_api_key = config::get(OWM_API_KEY.deref()).expect("OWM_API_KEY is not configured");
-            let resolved_location = resolve_location(location_arg, owm_api_key.clone()).await?;
+            let resolved_location = resolve_location(location_arg, zip_arg, owm_api_key.clone()).await?;
             if resolved_location.len() < 1 {
                 return Err(Error::msg("cannot find location"));
             }
