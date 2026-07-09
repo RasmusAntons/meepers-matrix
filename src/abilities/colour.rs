@@ -6,6 +6,7 @@ use futures::FutureExt;
 use image::{ImageFormat, Rgba, RgbaImage};
 use matrix_sdk::attachment::{AttachmentInfo, BaseImageInfo};
 use matrix_sdk::ruma::UInt;
+use matrix_sdk::ruma::events::room::message::AddMentions;
 use matrix_sdk::{
     Room,
     attachment::AttachmentConfig,
@@ -69,6 +70,7 @@ pub static COLOUR_ABILITY: Ability = Ability {
                     .reply(Some(Reply {
                         event_id: ev.event_id.clone(),
                         enforce_thread: EnforceThread::MaybeThreaded,
+                        add_mentions: AddMentions::No,
                     }))
                     .info(AttachmentInfo::Image(BaseImageInfo {
                         height: Some(UInt::from(128u32)),

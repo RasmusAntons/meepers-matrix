@@ -11,6 +11,7 @@ use std::collections::HashMap;
 pub mod colour;
 pub mod config;
 pub mod define;
+pub mod weather;
 
 pub struct Ability<'a> {
     name: &'a str,
@@ -36,6 +37,7 @@ static ABILITIES: &[&Ability] = &[
     &colour::COLOUR_ABILITY,
     &config::CONFIG_ABILITY,
     &define::DEFINE_ABILITY,
+    &weather::WEATHER_ABILITY,
 ];
 
 lazy_static! {

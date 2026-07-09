@@ -36,6 +36,7 @@ config_keys! {
     SOME_NUMBER, i64, "some number", default = 67;
     LIST_OF_NUMBERS, Vec<i64>, "list of numbers", default = vec![1, 2, 3];
     STRING_TO_STRING_MAP, HashMap<String, String>, "a map from string to string";
+    OWM_API_KEY, String, "openweathermap api key";
 }
 
 #[derive(Debug)]
